@@ -26,15 +26,14 @@ A few things changed once I started actually implementing:
 
 The scheduler considers two main things: **priority** (high, medium, low) and **time** (due date + time of day). I gave the user control over which one drives the sort because both are useful in different situations — priority sort helps you figure out what matters most, time sort helps you plan your actual day hour by hour.
 
-I focused on these two because they're what a pet owner would actually think about. "What's most urgent?" and "What do I need to do first today?" covers most real scheduling decisions. I left out things like task duration or location because adding those would require a lot more data fields and make the whole app more complicated without adding much value at this stage.
-
+I focused on these two because they're what a pet owner would actually think about. "
 **b. Tradeoffs**
 
 **Exact-time conflict detection instead of duration-aware overlap**
 
 `get_conflicts()` only flags tasks as conflicting when they share the exact same `(due_date, time)` slot. So if Morning Walk is at 7:00 AM and Morning Feed is at 7:20 AM, there's no warning even though they might overlap in real life.
 
-I made this tradeoff for two reasons. First, detecting real overlap requires a duration field that doesn't exist on Task. Adding it would mean updating every constructor call, the UI form, the sort logic, and the recurrence logic — a lot of changes for one feature. Second, pet care tasks are mostly point-in-time reminders anyway. The most useful warning is "you have two things at the exact same time," which clearly signals a mistake. Two tasks 20 minutes apart is usually fine.
+I made this tradeoff since detecting real overlap requires a duration field that doesn't exist on Task. Adding it would mean updating every constructor call, the UI form, the sort logic, and the recurrence logic — a lot of changes for one feature. 
 
 If I added duration later, I could update `get_conflicts()` to check `task_a.time + timedelta(minutes=task_a.duration) > task_b.time` without having to change anything else.
 
@@ -44,9 +43,9 @@ If I added duration later, I could update `get_conflicts()` to check `task_a.tim
 
 **a. How you used AI**
 
-I used Claude Code throughout the whole project. In Phase 1 it helped me think through the class structure before writing anything — I described the app in plain English and it helped me figure out what classes I needed and how they should connect. In Phase 2 I'd describe what a method was supposed to do and it would draft the code, which I'd then read and either keep, tweak, or throw out. In Phase 3 it helped connect everything to the Streamlit UI and catch bugs I missed, like tasks always being assigned to the first pet no matter which one was selected in the dropdown.
+I used Claude Code throughout the whole project. In Phase 1 it helped me think through the class structure. In Phase 2 I'd describe what a method was supposed to do and it would draft the code, which I'd then read and either keep, tweak, or throw out. In Phase 3 it helped connect everything to the Streamlit UI and catch bugs I missed, like tasks always being assigned to the first pet no matter which one was selected in the dropdown.
 
-The most useful features were that it read my actual files (so it never made up method names that didn't exist), I could keep iterating on the same file without re-pasting everything, and asking it to explain a bug before jumping to a fix usually got better results than just saying "fix this."
+The most useful features were that it read my actual files, I could keep iterating on the same file without re-pasting everything, and asking it to explain a bug before jumping to a fix usually got better results than just saying "fix this."
 
 **b. Judgment and verification**
 
@@ -58,7 +57,7 @@ The AI then suggested storing the message in `st.session_state` and displaying i
 
 Keeping separate chat sessions for each phase (design, backend, UI, docs) helped a lot because each conversation stayed focused. When a session is only about the backend, suggestions don't randomly drift into Streamlit UI patterns. When it's only about the UI, it's not pulling in unrelated class definitions.
 
-The biggest thing I learned is that the AI does exactly what you tell it to, so the quality of what you get back depends almost entirely on how clearly you describe what you want. When I was vague, the output was generic. When I said something specific like "add a selectbox above the task form that lists all current pets by name and use the selected pet to assign the task," I got something I could use right away. Being the lead architect means knowing your system well enough to catch when a suggestion that looks right is actually wrong for your specific setup.
+The biggest thing I learned is that the AI does exactly what you tell it to, so the quality of what you get back depends almost entirely on how clearly you describe what you want. When I said something specific like "add a selectbox above the task form that lists all current pets by name and use the selected pet to assign the task," I got something I could use right away. Being the lead architect means knowing your system well enough to catch when a suggestion that looks right is actually wrong for your specific setup.
 
 ---
 
