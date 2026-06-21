@@ -17,8 +17,13 @@
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+ Yes:
+
+- Added Task.name to fix the mismatch with Pet.remove_task(task_name) — there was no field to match against before. 
+
+- Changed Task.due_date from str to datetime.date so date comparisons work correctly in sorting. 
+
+- Added PRIORITY_ORDER dict (high → 0, medium → 1, low → 2) and a comment on sort_tasks() to document the intended sort key (priority first, then due_date).
 
 ---
 
