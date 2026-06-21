@@ -36,8 +36,17 @@
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+**Exact-time conflict detection instead of duration-aware overlap**
+
+`get_conflicts()` flags two tasks as conflicting only when their `(due_date, time)` slots match exactly — for example, both at `2026-06-21 07:00 AM`. It does not consider how long each task takes, so a 30-minute Morning Walk starting at 7:00 AM and a 15-minute Morning Feed starting at 7:20 AM would *not* be flagged, even though they overlap in real life.
+
+This is a reasonable tradeoff for this stage of the project for two reasons:
+
+1. **Task has no duration field.** Detecting overlap requires knowing when each task *ends*, which means storing a duration or end time. Adding that field would ripple through every constructor call, the sorting logic, the UI form, and the auto-reschedule logic. The exact-match check gives meaningful warnings with zero additional data.
+
+2. **Pet care tasks are typically point-in-time reminders, not calendar blocks.** "Feed at 7:00 AM" is a prompt, not a meeting. Exact-time conflicts (two reminders at the same moment) are the most actionable warning for an owner — they signal a scheduling mistake, not a tight but feasible back-to-back sequence.
+
+The cost of this tradeoff is that genuinely overlapping tasks with different start times go undetected. If duration were added in a future iteration, `get_conflicts()` could be extended to check whether `task_a.time + timedelta(minutes=task_a.duration) > task_b.time` without changing the rest of the class interface.
 
 ---
 

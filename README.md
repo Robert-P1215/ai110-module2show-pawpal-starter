@@ -71,14 +71,14 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
-
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Scheduler.sort_tasks(tasks, key)` | Two strategies: `"priority"` sorts high→medium→low then by date/time; `"time"` sorts strictly chronologically. Task name is always the final tiebreaker so results are deterministic. |
+| Build full schedule | `Scheduler.build_schedule(sort_key)` | Collects every incomplete task across all pets and delegates to `sort_tasks`. Entry point for generating the day's view. |
+| Filter by pet | `Scheduler.filter_by_pet(pet_name, sort_key)` | Returns only the named pet's incomplete tasks. Useful when the owner wants to focus on one animal without noise from others. |
+| Filter by status | `Scheduler.filter_by_status(completed)` | Pass `True` to see finished tasks, `False` for pending. Works across all pets at once. |
+| Conflict detection | `Scheduler.get_conflicts()` | Single dict-pass over all pending tasks grouped by `(due_date, time)` slot. Returns plain warning strings — never raises. Distinguishes same-pet conflicts (two tasks for the same animal at the same time) from cross-pet conflicts (tasks for different animals that clash). |
+| Recurring tasks | `Task.mark_complete()` + `Scheduler.mark_task_complete(pet_name, task_name)` | `mark_complete()` returns a new `Task` for the next occurrence using `timedelta` — `+1 day` for `"daily"`, `+7 days` for `"weekly"`, `None` for `"none"`. `mark_task_complete()` calls this and automatically appends the new task to the correct pet so the schedule stays up to date. |
 
 ## 📸 Demo Walkthrough
 
