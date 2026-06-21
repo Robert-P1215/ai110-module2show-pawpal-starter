@@ -123,6 +123,8 @@ The core scheduling behaviors — chronological sorting, daily recurrence chaini
 | **Weekly recurrence** | Same as daily but uses `due_date + 7 days`. |
 | **Mark complete with auto-reschedule** | `Scheduler.mark_task_complete(pet_name, task_name)` marks the first matching pending task done, then wires up the next occurrence automatically. The UI confirms both the completion and the newly scheduled task. |
 | **Duplicate-pet guard** | Adding a pet whose name already exists shows a warning instead of silently creating a duplicate. |
+| **Remove a pet** | A dropdown lists all registered pets; clicking *Remove Pet* deletes the pet and all its tasks, then immediately refreshes the UI. |
+| **Remove a task** | A dropdown lists every task across all pets (pending and completed); clicking *Remove Task* deletes it and immediately refreshes the task lists. |
 | **Professional schedule table** | Results render in `st.table` with color-coded priority badges (🔴 High, 🟡 Medium, 🟢 Low), status, recurrence, and formatted time columns. |
 
 ## 📸 Demo Walkthrough
@@ -135,8 +137,10 @@ PawPal+ is a single-page Streamlit app divided into four sections:
 |---------|----------------|
 | **Owner** | Enter the owner's name and click *Set Owner* to initialize the session. |
 | **Add a Pet** | Enter a pet name and species, then click *Add Pet*. Repeat for every animal. A caption lists all current pets so you always know what's registered. |
+| **Remove a Pet** | Select any registered pet from the dropdown and click *Remove Pet* to delete it and all its tasks. The pet list updates instantly. |
 | **Add a Task** | Choose which pet gets the task from the *Assign to pet* dropdown, fill in the task details, and click *Add Task*. |
 | **Today's Schedule** | Sort by priority or time, filter by pet and status, then click *Generate Schedule* to see the full table with conflict warnings. Use *Mark Task Complete* to tick off finished items and trigger automatic rescheduling for recurring tasks. |
+| **Remove a Task** | Select any task (from any pet, any status) and click *Remove Task* to delete it. The task list updates instantly. |
 
 ---
 
@@ -149,6 +153,8 @@ PawPal+ is a single-page Streamlit app divided into four sections:
 5. **Spot the conflicts** — Two `st.warning` banners appear: one flagging that Mochi has two tasks at 7:00 AM (same-pet conflict) and one flagging that Mochi's Vet Checkup and Luna's Playtime both land at 10:00 AM (cross-pet conflict).
 6. **Complete a task** — Select "Mochi: Morning Walk" from the dropdown and click *Mark Complete*. The task is ticked off and an `st.info` message confirms the next daily occurrence has been scheduled for tomorrow.
 7. **Switch to priority view** — Change sort to *priority* and regenerate. High-priority tasks bubble to the top regardless of their scheduled time.
+8. **Remove a task** — Scroll to *Remove a Task*, select "Mochi: Vet Checkup" from the dropdown, and click *Remove Task*. The task disappears from the list immediately.
+9. **Remove a pet** — Scroll to *Remove a Pet*, select "Rex", and click *Remove Pet*. Rex and all his tasks are gone and the pet caption updates on the spot.
 
 ---
 

@@ -43,6 +43,16 @@ else:
     if current_pets:
         st.caption("Current pets: " + ", ".join(f"{p.name} ({p.species})" for p in current_pets))
 
+# --- Remove a pet ---
+if st.session_state.owner is not None:
+    removable_pets = [p.name for p in st.session_state.owner.get_pets()]
+    if removable_pets:
+        st.subheader("Remove a Pet")
+        pet_to_remove = st.selectbox("Select pet to remove", removable_pets, key="remove_pet_select")
+        if st.button("Remove Pet"):
+            st.session_state.owner.remove_pet(pet_to_remove)
+            st.rerun()
+
 # --- Task input ---
 st.divider()
 st.subheader("Add a Task")
@@ -170,3 +180,21 @@ if st.session_state.scheduler is not None:
                 )
     else:
         st.info("No pending tasks to complete.")
+
+    # --- Remove a task ---
+    st.divider()
+    st.subheader("Remove a Task")
+    all_tasks_removable = {}
+    for pet in pets:
+        for task in pet.get_tasks():
+            label = f"{pet.name}: {task.name} ({task.due_date})"
+            all_tasks_removable[label] = (pet, task.name)
+
+    if all_tasks_removable:
+        task_to_remove = st.selectbox("Select task to remove", list(all_tasks_removable.keys()), key="remove_task_select")
+        if st.button("Remove Task"):
+            target_pet, target_task_name = all_tasks_removable[task_to_remove]
+            target_pet.remove_task(target_task_name)
+            st.rerun()
+    else:
+        st.info("No tasks to remove.")
