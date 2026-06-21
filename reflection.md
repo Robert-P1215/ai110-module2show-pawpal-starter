@@ -4,8 +4,16 @@
 
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+- The Owner class stores the owner's name and a list of pets they own. It includes methods to add a pet, remove a pet by name, and return the list of pets.
+
+- The Pet class stores a pet's name, species, and a list of tasks. Its methods allow tasks to be added, removed by name, and returned when needed.
+
+- The Task class stores information about a task, including its description, due date, priority, and whether it has been completed. It also has a method to mark the task as complete.
+
+- The Scheduler class creates a schedule using the tasks from an owner's pets. It stores a reference to an owner and includes methods to build and sort the schedule.
+
+- The relationships are one-to-many from Owner to Pet, meaning one owner can have many pets, one-to-many from Pet to Task, meaning one pet can have many tasks, and one-to-one from Scheduler to Owner, meaning each scheduler works with one owner.
+
 
 **b. Design changes**
 
