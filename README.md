@@ -107,14 +107,83 @@ The core scheduling behaviors — chronological sorting, daily recurrence chaini
 | Conflict detection | `Scheduler.get_conflicts()` | Single dict-pass over all pending tasks grouped by `(due_date, time)` slot. Returns plain warning strings — never raises. Distinguishes same-pet conflicts (two tasks for the same animal at the same time) from cross-pet conflicts (tasks for different animals that clash). |
 | Recurring tasks | `Task.mark_complete()` + `Scheduler.mark_task_complete(pet_name, task_name)` | `mark_complete()` returns a new `Task` for the next occurrence using `timedelta` — `+1 day` for `"daily"`, `+7 days` for `"weekly"`, `None` for `"none"`. `mark_task_complete()` calls this and automatically appends the new task to the correct pet so the schedule stays up to date. |
 
+## ✨ Features
+
+| Feature | Description |
+|---------|-------------|
+| **Multi-pet management** | Create an owner, then add as many pets (dog, cat, other) as needed. Each pet holds its own independent task list. |
+| **Task creation with full metadata** | Every task stores a name, description, scheduled time, priority (high / medium / low), recurrence (none / daily / weekly), and due date. |
+| **Assign tasks to a specific pet** | A dropdown in the UI lets you pick exactly which pet receives a new task — no more tasks silently going to the first animal. |
+| **Priority-based sorting** | `Scheduler.sort_tasks(key="priority")` orders tasks high → medium → low, then by due date, then by time, then alphabetically so the result is always deterministic. |
+| **Chronological sorting** | `Scheduler.sort_tasks(key="time")` ignores priority entirely and sorts strictly by due date → time of day, giving a clean hour-by-hour view of the day. |
+| **Filter by pet** | `Scheduler.filter_by_pet(pet_name)` returns only the named pet's pending tasks, respecting the chosen sort strategy. |
+| **Filter by status** | Switch between Pending, Completed, and All in the UI; backed by `Scheduler.filter_by_status(completed)`. |
+| **Conflict detection** | `Scheduler.get_conflicts()` does a single dict-pass over all pending tasks, grouping by `(due_date, time)` slot. It distinguishes *same-pet* conflicts (two tasks for the same animal at the same time) from *cross-pet* conflicts (tasks for different animals that clash). Warnings are surfaced as `st.warning` banners; a `st.success` confirmation appears when the schedule is clean. |
+| **Daily recurrence** | Completing a task with `recurrence="daily"` automatically creates a new task with `due_date + 1 day` and appends it to the pet's list. |
+| **Weekly recurrence** | Same as daily but uses `due_date + 7 days`. |
+| **Mark complete with auto-reschedule** | `Scheduler.mark_task_complete(pet_name, task_name)` marks the first matching pending task done, then wires up the next occurrence automatically. The UI confirms both the completion and the newly scheduled task. |
+| **Duplicate-pet guard** | Adding a pet whose name already exists shows a warning instead of silently creating a duplicate. |
+| **Professional schedule table** | Results render in `st.table` with color-coded priority badges (🔴 High, 🟡 Medium, 🟢 Low), status, recurrence, and formatted time columns. |
+
 ## 📸 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+### UI overview
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+PawPal+ is a single-page Streamlit app divided into four sections:
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+| Section | What you can do |
+|---------|----------------|
+| **Owner** | Enter the owner's name and click *Set Owner* to initialize the session. |
+| **Add a Pet** | Enter a pet name and species, then click *Add Pet*. Repeat for every animal. A caption lists all current pets so you always know what's registered. |
+| **Add a Task** | Choose which pet gets the task from the *Assign to pet* dropdown, fill in the task details, and click *Add Task*. |
+| **Today's Schedule** | Sort by priority or time, filter by pet and status, then click *Generate Schedule* to see the full table with conflict warnings. Use *Mark Task Complete* to tick off finished items and trigger automatic rescheduling for recurring tasks. |
+
+---
+
+### Example workflow
+
+1. **Set the owner** — Enter "Jordan" and click *Set Owner*.
+2. **Add three pets** — Add Mochi (dog), Luna (cat), and Rex (dog) one at a time using *Add Pet*.
+3. **Add tasks** — Use the *Assign to pet* dropdown to give Mochi a high-priority "Morning Walk" at 7:00 AM (daily) and a "Vet Checkup" at 10:00 AM. Give Luna a "Playtime" at 10:00 AM (weekly). Give Rex an "Afternoon Walk" at 3:00 PM (daily).
+4. **Generate schedule** — Click *Generate Schedule* with sort set to *time*. The table shows all tasks in chronological order.
+5. **Spot the conflicts** — Two `st.warning` banners appear: one flagging that Mochi has two tasks at 7:00 AM (same-pet conflict) and one flagging that Mochi's Vet Checkup and Luna's Playtime both land at 10:00 AM (cross-pet conflict).
+6. **Complete a task** — Select "Mochi: Morning Walk" from the dropdown and click *Mark Complete*. The task is ticked off and an `st.info` message confirms the next daily occurrence has been scheduled for tomorrow.
+7. **Switch to priority view** — Change sort to *priority* and regenerate. High-priority tasks bubble to the top regardless of their scheduled time.
+
+---
+
+### Key Scheduler behaviors
+
+- **Sorting by time** — `build_schedule(sort_key="time")` produces a strict chronological list across all pets, ignoring priority.
+- **Sorting by priority** — `build_schedule(sort_key="priority")` puts high-priority tasks first. Within the same priority tier, earlier due dates and earlier times come first, with task name as the final tiebreaker.
+- **Conflict warnings** — Two tasks sharing the same `(due_date, time)` slot generate a warning string. Same-pet conflicts and cross-pet conflicts produce different messages so the owner knows whether the clash is within one animal's schedule or across animals.
+- **Daily / weekly recurrence** — `Task.mark_complete()` returns a ready-made next-occurrence `Task` using `timedelta`. `Scheduler.mark_task_complete()` calls this and appends the result to the correct pet automatically.
+
+---
+
+### Sample CLI output (`python main.py`)
+
+```
+============================================================
+  Full schedule -- sorted by TIME
+============================================================
+  1. [HIGH] Morning Feed | 2026-06-21 07:00 AM | daily (pending)
+  2. [HIGH] Morning Walk | 2026-06-21 07:00 AM | daily (pending)
+  3. [MEDIUM] Playtime | 2026-06-21 10:00 AM | weekly (pending)
+  4. [HIGH] Vet Checkup | 2026-06-21 10:00 AM (pending)
+  5. [MEDIUM] Afternoon Walk | 2026-06-21 03:00 PM | daily (pending)
+  6. [LOW] Rex Evening Feed | 2026-06-21 05:00 PM | daily (pending)
+  7. [LOW] Evening Feed | 2026-06-21 06:00 PM | daily (pending)
+  8. [MEDIUM] Litter Box | 2026-06-21 07:00 PM | daily (pending)
+
+============================================================
+  Conflict Detection
+============================================================
+  [WARNING] Same-pet conflict for Mochi: 'Morning Walk' and 'Morning Feed' both scheduled 2026-06-21 at 07:00 AM.
+  [WARNING] Cross-pet conflict: Mochi's 'Vet Checkup' and Luna's 'Playtime' both scheduled 2026-06-21 at 10:00 AM.
+
+============================================================
+  Rex's tasks (should produce zero warnings)
+============================================================
+  Conflicts found: 0  (expected 0)
+```

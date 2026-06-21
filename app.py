@@ -12,18 +12,36 @@ if "scheduler" not in st.session_state:
     st.session_state.scheduler = None
 
 # --- Owner setup ---
-st.subheader("Owner & Pet")
+st.subheader("Owner")
 owner_name = st.text_input("Owner name", value="Jordan")
-pet_name = st.text_input("Pet name", value="Mochi")
-species = st.selectbox("Species", ["dog", "cat", "other"])
 
-if st.button("Set Owner & Pet"):
-    pet = Pet(name=pet_name, species=species)
-    owner = Owner(name=owner_name)
-    owner.add_pet(pet)
-    st.session_state.owner = owner
-    st.session_state.scheduler = Scheduler(owner=owner)
-    st.success(f"Owner '{owner_name}' created with pet '{pet_name}'.")
+if st.button("Set Owner"):
+    st.session_state.owner = Owner(name=owner_name)
+    st.session_state.scheduler = Scheduler(owner=st.session_state.owner)
+    st.success(f"Owner '{owner_name}' created.")
+
+# --- Add pets ---
+st.subheader("Add a Pet")
+if st.session_state.owner is None:
+    st.info("Set an owner above before adding pets.")
+else:
+    pcol1, pcol2 = st.columns(2)
+    with pcol1:
+        pet_name = st.text_input("Pet name", value="Mochi")
+    with pcol2:
+        species = st.selectbox("Species", ["dog", "cat", "other"])
+
+    if st.button("Add Pet"):
+        existing_names = [p.name for p in st.session_state.owner.get_pets()]
+        if pet_name in existing_names:
+            st.warning(f"A pet named '{pet_name}' already exists.")
+        else:
+            st.session_state.owner.add_pet(Pet(name=pet_name, species=species))
+            st.success(f"Added pet '{pet_name}' ({species}).")
+
+    current_pets = st.session_state.owner.get_pets()
+    if current_pets:
+        st.caption("Current pets: " + ", ".join(f"{p.name} ({p.species})" for p in current_pets))
 
 # --- Task input ---
 st.divider()
@@ -32,6 +50,10 @@ st.subheader("Add a Task")
 if st.session_state.owner is None:
     st.info("Set an owner and pet above before adding tasks.")
 else:
+    pets = st.session_state.owner.get_pets()
+    pet_names = [p.name for p in pets]
+    selected_pet_name = st.selectbox("Assign to pet", pet_names)
+
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
         task_name = st.text_input("Task name", value="Morning Walk")
@@ -55,8 +77,9 @@ else:
             recurrence=recurrence,
             due_date=due,
         )
-        st.session_state.owner.get_pets()[0].add_task(task)
-        st.success(f"Task '{task_name}' added for {due}.")
+        target_pet = next(p for p in pets if p.name == selected_pet_name)
+        target_pet.add_task(task)
+        st.success(f"Task '{task_name}' added to {selected_pet_name} for {due}.")
 
 # --- Schedule ---
 st.divider()
@@ -80,9 +103,12 @@ if st.session_state.scheduler is not None:
         # --- Conflict detection ---
         conflicts = scheduler.get_conflicts()
         if conflicts:
-            st.warning("**Scheduling conflicts detected:**")
+            st.warning(f"⚠️ {len(conflicts)} scheduling conflict(s) detected:")
             for msg in conflicts:
-                st.warning(f"  • {msg}")
+                clean = msg.replace("[WARNING] ", "")
+                st.warning(f"• {clean}")
+        else:
+            st.success("No scheduling conflicts found.")
 
         # --- Fetch tasks based on filters ---
         if status_filter == "Completed":
@@ -101,14 +127,22 @@ if st.session_state.scheduler is not None:
         if not schedule:
             st.info("No tasks found for the selected filters.")
         else:
-            for i, task in enumerate(schedule, start=1):
-                recur_label = f" | {task.recurrence}" if task.recurrence != "none" else ""
-                done_label = " [done]" if task.completion_status else ""
-                st.markdown(
-                    f"**{i}. [{task.priority.upper()}] {task.name}{done_label}** "
-                    f"on {task.due_date} at {task.time.strftime('%I:%M %p')} — "
-                    f"{task.description}{recur_label}"
-                )
+            PRIORITY_COLOR = {"high": "🔴", "medium": "🟡", "low": "🟢"}
+            rows = []
+            for task in schedule:
+                icon = PRIORITY_COLOR.get(task.priority, "⚪")
+                status = "✅ Done" if task.completion_status else "⏳ Pending"
+                recur = task.recurrence.capitalize() if task.recurrence != "none" else "—"
+                rows.append({
+                    "Priority": f"{icon} {task.priority.capitalize()}",
+                    "Task": task.name,
+                    "Description": task.description,
+                    "Due": str(task.due_date),
+                    "Time": task.time.strftime("%I:%M %p"),
+                    "Recurrence": recur,
+                    "Status": status,
+                })
+            st.table(rows)
 
     # --- Mark complete ---
     st.divider()
